@@ -1,2 +1,2 @@
 # bulky
-Bulk rename files
+Bulk rename files and directories
