@@ -103,8 +103,96 @@ def goProcessFileAsParent(lparamPath,lparamFileAsParent,loptCapitalize,ltaskMove
                         print("Duplicate - skipping")
 
 def goProcess(lparamPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction):
-    print("WORK")
-    # ako je returnone > 0 onda sim tam
+    for subItem in os.listdir(lparamPath):
+        paramSubPath = lparamPath + subItem
+        if os.path.isdir(paramSubPath):
+            if not paramSubPath.endswith(os.sep):
+                paramSubPath = paramSubPath + os.sep
+            if loptRecursive:
+                goProcess(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction)
+            if loptDir:
+                goProcessEntry(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction)
+        if os.path.isfile(paramSubPath):
+            if loptFile:
+                goProcessEntry(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction)
+
+def goProcessEntry(lparamPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction):
+    '''
+    if loptCapitalize:
+        #last = last.title()
+        print("Capitalize")
+    if loptDir or (loptFile and loptIgnoreExt):
+        print ("processing directory or file while ignoring extension", lparamPath)
+        if isOne(keepLeft) + isOne(keepRight) > 0:
+            if keepLeft != "-1":
+                last = last[:int(keepLeft)]
+            if keepRight != "-1":
+                last = last[len(last) - int(keepRight):]
+            newEntry = path + last
+
+        if isOne(stripLeft) + isOne(stripRight) > 0:
+            if stripLeft != "-1":
+                last = last[int(stripLeft):]
+            if stripRight != "-1":
+                last = last[:-int(stripRight)]
+            newEntry = path + last
+
+        if isOne(insert) + isOne(append) > 0:
+            if insert == "-1":
+                insert = ""
+            if append == "-1":
+                append = ""
+            if at != 0:
+                newEntry = last[:int(at)] + insert + last[int(at):] + append
+            else:
+                newEntry = path + insert + last + append
+
+        if isOne(replaceThis) + isOne(withThis) > 0:
+            newEntry = path + last.replace(replaceThis,withThis)
+
+    elif loptFile:
+        print ("processing file while preserving extension", lparamPath)
+        last1 = last.rsplit('.', 1)
+
+        if isOne(keepLeft) + isOne(keepRight) > 0:
+            if keepLeft != "-1":
+                last1[0] = last1[0][:int(keepLeft)]
+            if keepRight != "-1":
+                last1[0] = path + last1[0][int(keepRight)-1:]
+            newEntry = path + last1[0] + "." + last1[1]
+
+        if isOne(stripLeft) + isOne(stripRight) > 0:
+            if stripLeft != "-1":
+                last1[0] = last1[0][int(stripLeft):]
+            if stripRight != "-1":
+                last1[0] = last1[0][:-int(stripRight)]
+            newEntry = path + last1[0] + "." + last1[1]
+
+        if isOne(insert) + isOne(append) > 0:
+            if insert == "-1":
+                insert = ""
+            if append == "-1":
+                append = ""
+            newEntry = path + insert + last1[0] + append + "." + last1[1]
+
+        if isOne(replaceThis) + isOne(withThis) > 0:
+            newEntry = path + last1[0].replace(replaceThis,withThis) + "." + last1[1]
+
+    print("[" + entryType + "] " + entry + "\t==>\t" + newEntry + "\t==\t", end='')
+
+    if isProduction:
+        if not os.path.exists(newEntry):
+            try:
+                os.rename(entry, newEntry)
+                print("OK")
+            except:
+                print("Error executing ")
+        else:
+            print("Duplicate - skipping")
+    else:
+        print("Test")
+    '''
+
 
 if len(sys.argv)>1:
     for i in range(len(sys.argv)):
