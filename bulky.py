@@ -51,6 +51,7 @@ def ifDefinedReturnOne(strValue):
     if strValue != None:
         ret = 1
     return ret
+
 # Return True if defined
 def ifDefinedReturnTrue(strValue):
     ret = False
@@ -117,81 +118,79 @@ def goProcess(lparamPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapita
                 goProcessEntry(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction)
 
 def goProcessEntry(lparamPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction):
-    '''
-    if loptCapitalize:
-        #last = last.title()
-        print("Capitalize")
-    if loptDir or (loptFile and loptIgnoreExt):
-        print ("processing directory or file while ignoring extension", lparamPath)
-        if isOne(keepLeft) + isOne(keepRight) > 0:
-            if keepLeft != "-1":
-                last = last[:int(keepLeft)]
-            if keepRight != "-1":
-                last = last[len(last) - int(keepRight):]
-            newEntry = path + last
+    if lparamPath[-1] == os.sep: # Remove trailing directory separator if present
+        lparamPath = lparamPath[:-1]
+    lPathArray = lparamPath.rsplit(os.sep,1) # Split path by directory separator
 
-        if isOne(stripLeft) + isOne(stripRight) > 0:
-            if stripLeft != "-1":
-                last = last[int(stripLeft):]
-            if stripRight != "-1":
-                last = last[:-int(stripRight)]
-            newEntry = path + last
-
-        if isOne(insert) + isOne(append) > 0:
-            if insert == "-1":
-                insert = ""
-            if append == "-1":
-                append = ""
-            if at != 0:
-                newEntry = last[:int(at)] + insert + last[int(at):] + append
-            else:
-                newEntry = path + insert + last + append
-
-        if isOne(replaceThis) + isOne(withThis) > 0:
-            newEntry = path + last.replace(replaceThis,withThis)
-
+    p = Path(lparamPath).absolute() # Get path of item
+    lPath = str(p.parents[0]) + os.sep
+    if loptDir or (loptFile and loptIgnoreExt): # Get name of item + extension if applied
+        lOldVal = lPathArray[1]
+        lExt = ""
     elif loptFile:
-        print ("processing file while preserving extension", lparamPath)
-        last1 = last.rsplit('.', 1)
+        f = lPathArray[1].rsplit(".",1)
+        lOldVal = f[0]
+        lExt = "."+f[1]
 
-        if isOne(keepLeft) + isOne(keepRight) > 0:
-            if keepLeft != "-1":
-                last1[0] = last1[0][:int(keepLeft)]
-            if keepRight != "-1":
-                last1[0] = path + last1[0][int(keepRight)-1:]
-            newEntry = path + last1[0] + "." + last1[1]
+    if ifDefinedReturnOne(lparamKeepLeft) + ifDefinedReturnOne(lparamKeepRight) > 0:
+        lNewVal = ""
+        if ifDefinedReturnOne(lparamKeepLeft):
+            res = lOldVal[:int(lparamKeepLeft)]
+            lNewVal += res
+        if ifDefinedReturnOne(lparamKeepRight):
+            res = lOldVal[- int(lparamKeepRight):]
+            lNewVal += res
 
-        if isOne(stripLeft) + isOne(stripRight) > 0:
-            if stripLeft != "-1":
-                last1[0] = last1[0][int(stripLeft):]
-            if stripRight != "-1":
-                last1[0] = last1[0][:-int(stripRight)]
-            newEntry = path + last1[0] + "." + last1[1]
+    if ifDefinedReturnOne(lparamStripLeft) + ifDefinedReturnOne(lparamStripRight) > 0:
+        lNewVal = ""
+        if ifDefinedReturnOne(lparamStripLeft):
+            res = lOldVal[int(lparamStripLeft):]
+            lNewVal += res
+        if ifDefinedReturnOne(lparamStripRight):
+            res = lOldVal[:-int(lparamStripRight)]
+            lNewVal += res
 
-        if isOne(insert) + isOne(append) > 0:
-            if insert == "-1":
-                insert = ""
-            if append == "-1":
-                append = ""
-            newEntry = path + insert + last1[0] + append + "." + last1[1]
+    if ifDefinedReturnOne(lparamInsert) + ifDefinedReturnOne(lparamAppend) > 0:
+        lNewVal = ""
+        if ifDefinedReturnOne(lparamInsert) and not ifDefinedReturnOne(lparamAppend):
+            if lparamAt != 0:
+                res = lOldVal[:int(lparamAt)] + lparamInsert + lOldVal[int(lparamAt):]
+            else:
+                res = lparamInsert + lOldVal
+            lNewVal += res
+        elif not ifDefinedReturnOne(lparamInsert) and ifDefinedReturnOne(lparamAppend):
+            res = lOldVal + lparamAppend
+            lNewVal += res
+        else:
+            if lparamAt != 0:
+                res = lOldVal[:int(lparamAt)] + lparamInsert + lOldVal[int(lparamAt):] + lparamAppend
+            else:
+                res = lparamInsert + lOldVal + lparamAppend
+            lNewVal += res
+        
+    if ifDefinedReturnOne(lparamReplace) + ifDefinedReturnOne(lparamWith) > 0:
+        lNewVal = ""
+        res = lOldVal.replace(lparamReplace,lparamWith)
+        lNewVal += res
 
-        if isOne(replaceThis) + isOne(withThis) > 0:
-            newEntry = path + last1[0].replace(replaceThis,withThis) + "." + last1[1]
+    if loptCapitalize:
+        lNewVal = lNewVal.title()
+    lNewVal += lExt
 
-    print("[" + entryType + "] " + entry + "\t==>\t" + newEntry + "\t==\t", end='')
-
-    if isProduction:
-        if not os.path.exists(newEntry):
+    print(lparamPath + "\t==>\t" + lPath + lNewVal + "\t==\t", end='')
+    
+    if ltaskProduction:
+        if not os.path.exists(lPath + lNewVal):
             try:
-                os.rename(entry, newEntry)
-                print("OK")
+                os.rename(lparamPath, lPath + lNewVal)
+                print("Done!")
             except:
                 print("Error executing ")
         else:
             print("Duplicate - skipping")
     else:
         print("Test")
-    '''
+    
 
 
 if len(sys.argv)>1:
