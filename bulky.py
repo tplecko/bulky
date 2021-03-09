@@ -6,7 +6,8 @@ from pathlib import Path
 taskProduction = False
 taskMoveUp = False
 
-optDebug = False
+paramVerbose = False
+paramDump = False
 
 optFile = False
 optDir = False
@@ -274,9 +275,35 @@ if len(sys.argv)>1:
         if sys.argv[i] == "--make-it-so":
             taskProduction = True
 
-        if sys.argv[i] == "--debug":
-            optDebug = True
+        if sys.argv[i] == "--verbose":
+            paramVerbose = True
 
+        if sys.argv[i] == "--dump":
+            paramDump = True
+
+    if paramDump:
+        print('taskProduction',taskProduction)
+        print('taskMoveUp',taskMoveUp)
+        print('optFile',optFile)
+        print('optDir',optDir)
+        print('optRecursive',optRecursive)
+        print('optCapitalize',optCapitalize)
+        print('optIgnoreExt',optIgnoreExt)
+        print('paramPath',paramPath)
+        print('paramKeepLeft',paramKeepLeft)
+        print('paramKeepRight',paramKeepRight)
+        print('paramReplace',paramReplace)
+        print('paramWith',paramWith)
+        print('paramInsert',paramInsert)
+        print('paramAt',paramAt)
+        print('paramAppend',paramAppend)
+        print('paramStripLeft',paramStripLeft)
+        print('paramStripRight',paramStripRight)
+        print('paramFileAsParent',paramFileAsParent)
+        print('paramVerbose',paramVerbose)
+        print('paramDump',paramDump)
+        sys.exit()
+        
     if (paramReplace == None or paramWith == None) and paramReplace != paramWith:
         print("<replace> and <with> must both be defined")
         sys.exit()
@@ -353,30 +380,12 @@ else:
     print("All operations only output what will happen. To do the actual task, use the production run switch")
     print("\t--make-it-so\t\t\t\tDo a production run")
     print("")
+    print("\t--dump\t\t\t\tPrint detected arguments")
+    print("\t--verbose\t\t\t\tVerbose output")
+    print("")
     print("Example:")
     print("\tbr.py -o=fri --path=/temp/directory --replace=hello --with=world")
     print("\tbr.py -o=fri --path=/temp/directory --keep-left=10 --keep-right=5")
     print("\tbr.py -o=fri --path=/temp/directory --strip-left=5 --strip-right=5")
     print("\tbr.py -o=fri --path=/temp/directory --insert=hello --at=4 --append=world")
     print("\tbr.py -o=d --path=/temp/directory --file-as-parent=file.ext --move-up")
-
-
-if optDebug:
-    print('taskProduction',taskProduction)
-    print('taskMoveUp',taskMoveUp)
-    print('optFile',optFile)
-    print('optDir',optDir)
-    print('optRecursive',optRecursive)
-    print('optCapitalize',optCapitalize)
-    print('optIgnoreExt',optIgnoreExt)
-    print('paramPath',paramPath)
-    print('paramKeepLeft',paramKeepLeft)
-    print('paramKeepRight',paramKeepRight)
-    print('paramReplace',paramReplace)
-    print('paramWith',paramWith)
-    print('paramInsert',paramInsert)
-    print('paramAt',paramAt)
-    print('paramAppend',paramAppend)
-    print('paramStripLeft',paramStripLeft)
-    print('paramStripRight',paramStripRight)
-    print('paramFileAsParent',paramFileAsParent)
