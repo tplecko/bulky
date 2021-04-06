@@ -2,6 +2,7 @@ import sys
 import os
 import shutil
 from pathlib import Path
+import re
 
 taskProduction = False
 taskMoveUp = False
@@ -28,6 +29,7 @@ paramStripRight = None
 paramFileAsParent = None
 paramMatch = None
 paramNoMatch = None
+paramRegex = False
 
 # Return None if empty string
 def getVal(strValue,intLength):
@@ -106,21 +108,21 @@ def goProcessFileAsParent(lparamPath,lparamFileAsParent,loptCapitalize,ltaskMove
                     else:
                         print("Duplicate - skipping")
 
-def goProcess(lparamPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch):
+def goProcess(lparamPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch,lparamRegex):
     for subItem in os.listdir(lparamPath):
         paramSubPath = lparamPath + subItem
         if os.path.isdir(paramSubPath):
             if not paramSubPath.endswith(os.sep):
                 paramSubPath = paramSubPath + os.sep
             if loptRecursive:
-                goProcess(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch)
+                goProcess(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch,lparamRegex)
             if loptDir:
-                goProcessEntry(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch)
+                goProcessEntry(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch,lparamRegex)
         if os.path.isfile(paramSubPath):
             if loptFile:
-                goProcessEntry(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch)
+                goProcessEntry(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch,lparamRegex)
 
-def goProcessEntry(lparamPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch):
+def goProcessEntry(lparamPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch,lparamRegex):
     if lparamPath[-1] == os.sep: # Remove trailing directory separator if present
         lparamPath = lparamPath[:-1]
     lPathArray = lparamPath.rsplit(os.sep,1) # Split path by directory separator
@@ -174,7 +176,12 @@ def goProcessEntry(lparamPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptC
             
         if ifDefinedReturnOne(lparamReplace) + ifDefinedReturnOne(lparamWith) > 0:
             lNewVal = ""
-            res = lOldVal.replace(lparamReplace,lparamWith)
+            if lparamRegex:
+                #pattern = re.compile(lparamReplace,re.IGNORECASE)
+                pattern = re.compile(lparamReplace)
+                res = pattern.sub(lparamWith,lOldVal)
+            else:
+                res = lOldVal.replace(lparamReplace,lparamWith)
             lNewVal += res
 
         if loptCapitalize:
@@ -287,6 +294,9 @@ if len(sys.argv)>1:
         if sys.argv[i] == "--verbose":
             paramVerbose = True
 
+        if sys.argv[i] == "--regex":
+            paramRegex = True
+
         if sys.argv[i] == "--dump":
             paramDump = True
 
@@ -313,6 +323,7 @@ if len(sys.argv)>1:
         print('paramDump',paramDump)
         print('paramMatch',paramMatch)
         print('paramNoMatch',paramNoMatch)
+        print('paramRegex',paramRegex)
         sys.exit()
         
     if (paramReplace == None or paramWith == None) and paramReplace != paramWith:
@@ -357,7 +368,7 @@ if len(sys.argv)>1:
     if ifDefinedReturnTrue(paramFileAsParent): 
         goProcessFileAsParent(paramPath,paramFileAsParent,optCapitalize,taskMoveUp,taskProduction)
     else:
-        goProcess(paramPath,optRecursive,optDir,optFile,optIgnoreExt,optCapitalize,paramKeepLeft,paramKeepRight,paramReplace,paramWith,paramInsert,paramAt,paramAppend,paramStripLeft,paramStripRight,paramFileAsParent,taskProduction,paramMatch,paramNoMatch)
+        goProcess(paramPath,optRecursive,optDir,optFile,optIgnoreExt,optCapitalize,paramKeepLeft,paramKeepRight,paramReplace,paramWith,paramInsert,paramAt,paramAppend,paramStripLeft,paramStripRight,paramFileAsParent,taskProduction,paramMatch,paramNoMatch,paramRegex)
 else:
     print("Help")
     print("")
@@ -397,6 +408,8 @@ else:
     print("By default, only task output is displayed - no work is done. To perform the actual task, use the production run switch")
     print("\t--make-it-so\t\t\t\tDo a production run")
     print("")
+    print("\t--regex\t\t\t\t\tWill assume all strings are regex patterns")
+    #print("\t--ignore-case\t\t\t\t\tWill ignore case of regex patterns")
     print("\t--dump\t\t\t\t\tPrint detected arguments")
     print("\t--verbose\t\t\t\tVerbose output")
     print("")
