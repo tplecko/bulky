@@ -77,7 +77,6 @@ def ifDefinedReturnTrue(strValue):
     return ret
 
 # Do actual work here < --------------
-#def goProcessFileAsParent(lparamPath,lparamFileAsParent,loptCapitalize,ltaskMoveUp,ltaskProduction):
 def goProcessFileAsParent(ls):
     lCurrentFilePath = ""
     lCurrentFileNameArray = ""
@@ -389,7 +388,6 @@ if len(sys.argv)>1:
     # If the program survived this long - initialize crawler
     if ifDefinedReturnTrue(s.paramFileAsParent): 
         goProcessFileAsParent(s)
-        #goProcessFileAsParent(paramPath,paramFileAsParent,optCapitalize,taskMoveUp,taskProduction)
     else:
         goProcess(s)
 else:
