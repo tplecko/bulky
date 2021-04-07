@@ -223,6 +223,7 @@ def goProcessEntry(ls):
 
 
 if len(sys.argv)>1:
+    tmpPathArray = None
     for i in range(len(sys.argv)):
         if sys.argv[i].startswith("--options="):
             if "f" in sys.argv[i][10:]:
@@ -236,20 +237,6 @@ if len(sys.argv)>1:
             if "i" in sys.argv[i][10:]:
                 s.optIgnoreExt = True
         
-        # Path
-        if sys.argv[i].startswith("--path="):
-            s.paramPath = getVal(sys.argv[i],7)
-            ifNoneThenExit(s.paramPath,"<path> not defined")
-            if not s.paramPath.endswith(os.sep):
-                s.paramPath = s.paramPath + os.sep
-            if not os.path.exists(s.paramPath):
-                print("Invalid path")
-                sys.exit()
-            else:
-                if not os.path.isdir(s.paramPath):
-                    print("Path is not a directory")
-                    sys.exit()
-
         # Keep left or right n of characters
         if sys.argv[i].startswith("--keep-left="):
             s.paramKeepLeft = getVal(sys.argv[i],12)
@@ -321,6 +308,14 @@ if len(sys.argv)>1:
         if sys.argv[i] == "--dump":
             s.paramDump = True
 
+        # Path
+        if sys.argv[i].startswith("--path="):
+            s.paramPath = getVal(sys.argv[i],7)
+            if re.search("{.+}",s.paramPath):
+                tmpArray = re.findall(r"{.+}",s.paramPath)
+                tmpPathArray = tmpArray[0][1:-1].split(",")
+            ifNoneThenExit(s.paramPath,"<path> not defined")
+
     if s.paramDump:
         print('taskProduction\t\t=\t',s.taskProduction)
         print('taskMoveUp\t\t=\t',s.taskMoveUp)
@@ -389,7 +384,22 @@ if len(sys.argv)>1:
     if ifDefinedReturnTrue(s.paramFileAsParent): 
         goProcessFileAsParent(s)
     else:
-        goProcess(s)
+        for tmpPath in tmpPathArray:
+            s1 = copy(s)
+            pattern = re.compile(r"{.+}",re.IGNORECASE)
+            s1.paramPath = pattern.sub(tmpPath,s.paramPath)
+            if not s1.paramPath.endswith(os.sep):
+                s1.paramPath = s1.paramPath + os.sep
+            if not os.path.exists(s1.paramPath):
+                print("Invalid path: ", s1.paramPath)
+                #sys.exit()
+            else:
+                if not os.path.isdir(s1.paramPath):
+                    print("Path is not a directory")
+                    #sys.exit()
+                else:
+                    goProcess(s1)
+        #goProcess(s1)
 else:
     print("Help")
     print("")
@@ -402,21 +412,23 @@ else:
     print("\ti\t\t\t\t\tIgnore extensions (in combination with <f>)")
     print("")
     print("\t--path=<str>")
+    print("\t\tYou can use {1,2,3,4,ab,cd,...} once to pass a list of folders")
+    print("\t\tDo not use trailing backslash on Windows")
     print("")
     print("Matching (only one may be used)\tignored when used with --file-as-parent")
     print("\t--match=<str>\t\t\t\tOnly process files containing <str> (including extension)")
-    print("\t--no-match=<str>\t\t\t\tOnly process files not containing <str> (including extension)")
+    print("\t--no-match=<str>\t\t\tOnly process files not containing <str> (including extension)")
     print("")
     print("Operations (output is grouped by allowed combinations):")
     print("\t--keep-left=<int>\t\t\tKeep <int> characters on left")
     print("\t--keep-right=<int>\t\t\tKeep <int> characters on right")
     print("")
     print("\t--replace=<str>\t\t\t\tReplace <str>")
+    print("\t--regex\t\t\t\t\tWill assume --replace <str> is regular expression")
+    print("\t--ignore-case\t\t\t\tWill ignore case of regular expression")
     print("\t--with=<str>\t\t\t\tWith <str>")
     print("\t\tnull => replace with nothing")
     print("\t\tspace => replace with space")
-    print("\t--regex\t\t\t\t\tWill assume --replace <str> is regular expression")
-    print("\t--ignore-case\t\t\t\t\tWill ignore case of regular expression")
     print("")
     print("\t--insert=<str>\t\t\t\tInsert <str> at start")
     print("\t--at=<int>\t\t\t\tInsert <str> at <int>")
@@ -440,3 +452,7 @@ else:
     print("\tbulky.py --options=fc --path=/temp/directory --strip-left=5 --strip-right=5")
     print("\tbulky.py --options=f --path=/temp/directory --insert=hello --at=4 --append=world")
     print("\tbulky.py --path=/temp/directory --file-as-parent=file.ext --move-up")
+    print("")
+    print("\tbulky.py --options=fi --path=/temp/directory{1,2} --replace=hello --with=world")
+    print("\t\twill crawl through: /temp/directory1/ and /temp/directory2/")
+    
