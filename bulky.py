@@ -5,7 +5,6 @@ from pathlib import Path
 import re
 from copy import copy, deepcopy
 
-
 class startup:
     taskProduction = False
     taskMoveUp = False
@@ -384,22 +383,31 @@ if len(sys.argv)>1:
     if ifDefinedReturnTrue(s.paramFileAsParent): 
         goProcessFileAsParent(s)
     else:
-        for tmpPath in tmpPathArray:
+        if tmpPathArray != None:
+            for tmpPath in tmpPathArray:
+                s1 = copy(s)
+                pattern = re.compile(r"{.+}",re.IGNORECASE)
+                s1.paramPath = pattern.sub(tmpPath,s.paramPath)
+                if not s1.paramPath.endswith(os.sep):
+                    s1.paramPath = s1.paramPath + os.sep
+                if not os.path.exists(s1.paramPath):
+                    print("Invalid path: ", s1.paramPath)
+                else:
+                    if not os.path.isdir(s1.paramPath):
+                        print("Path is not a directory")
+                    else:
+                        goProcess(s1)
+        else:
             s1 = copy(s)
-            pattern = re.compile(r"{.+}",re.IGNORECASE)
-            s1.paramPath = pattern.sub(tmpPath,s.paramPath)
             if not s1.paramPath.endswith(os.sep):
                 s1.paramPath = s1.paramPath + os.sep
             if not os.path.exists(s1.paramPath):
                 print("Invalid path: ", s1.paramPath)
-                #sys.exit()
             else:
                 if not os.path.isdir(s1.paramPath):
                     print("Path is not a directory")
-                    #sys.exit()
                 else:
                     goProcess(s1)
-        #goProcess(s1)
 else:
     print("Help")
     print("")
