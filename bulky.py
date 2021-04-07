@@ -3,33 +3,45 @@ import os
 import shutil
 from pathlib import Path
 import re
+from copy import copy, deepcopy
 
-taskProduction = False
-taskMoveUp = False
 
-paramVerbose = False
-paramDump = False
+class startup:
+    taskProduction = False
+    taskMoveUp = False
 
-optFile = False
-optDir = False
-optRecursive = False
-optCapitalize = False
-optIgnoreExt = False
+    paramVerbose = False
+    paramDump = False
 
-paramPath = None
-paramKeepLeft = None
-paramKeepRight = None
-paramReplace = None
-paramWith = None
-paramInsert = None
-paramAt = 0
-paramAppend = None
-paramStripLeft = None
-paramStripRight = None
-paramFileAsParent = None
-paramMatch = None
-paramNoMatch = None
-paramRegex = False
+    optFile = False
+    optDir = False
+    optRecursive = False
+    optCapitalize = False
+    optIgnoreExt = False
+
+    paramPath = None
+
+    paramKeepLeft = None
+    paramKeepRight = None
+
+    paramReplace = None
+    paramWith = None
+    paramRegex = False
+    paramRegexIgnoreCase = False
+
+    paramInsert = None
+    paramAt = 0
+    paramAppend = None
+
+    paramStripLeft = None
+    paramStripRight = None
+
+    paramMatch = None
+    paramNoMatch = None
+
+    paramFileAsParent = None
+
+s = startup()
 
 # Return None if empty string
 def getVal(strValue,intLength):
@@ -65,28 +77,29 @@ def ifDefinedReturnTrue(strValue):
     return ret
 
 # Do actual work here < --------------
-def goProcessFileAsParent(lparamPath,lparamFileAsParent,loptCapitalize,ltaskMoveUp,ltaskProduction):
+#def goProcessFileAsParent(lparamPath,lparamFileAsParent,loptCapitalize,ltaskMoveUp,ltaskProduction):
+def goProcessFileAsParent(ls):
     lCurrentFilePath = ""
     lCurrentFileNameArray = ""
     lNewFilePath = None
     lNewFileName = None
-    for itemSubfolder in os.listdir(lparamPath):
-        if os.path.isdir(lparamPath + itemSubfolder):
-            for itemFile in os.listdir(lparamPath + itemSubfolder):
-                if itemFile == lparamFileAsParent:
+    for itemSubfolder in os.listdir(ls.paramPath):
+        if os.path.isdir(ls.paramPath + itemSubfolder):
+            for itemFile in os.listdir(ls.paramPath + itemSubfolder):
+                if itemFile == ls.paramFileAsParent:
                     lCurrentFileNameArray = itemFile.rsplit('.', 1)
-                    lCurrentFilePath = lparamPath + itemSubfolder + os.sep + itemFile
+                    lCurrentFilePath = ls.paramPath + itemSubfolder + os.sep + itemFile
                     lNewFileName = itemSubfolder + "." + lCurrentFileNameArray[1]
-                    lNewFilePath = lparamPath + itemSubfolder + os.sep + itemSubfolder + "." + lCurrentFileNameArray[1]
+                    lNewFilePath = ls.paramPath + itemSubfolder + os.sep + itemSubfolder + "." + lCurrentFileNameArray[1]
                     print( lCurrentFilePath + "\t==>\t" + lNewFilePath + "\t==\t", end='')
             if lCurrentFilePath == None or lNewFilePath == None:
-                print("No files - " + lparamPath)
+                print("No files - " + ls.paramPath)
             else:
-                if ltaskProduction:
+                if ls.taskProduction:
                     if not os.path.exists(lNewFilePath):
                         try:
                             os.rename(lCurrentFilePath, lNewFilePath)
-                            if taskMoveUp:
+                            if ls.taskMoveUp:
                                 print ("Done => Moving file up one dir ... ", end='')
                                 p = Path(lNewFilePath).absolute()
                                 parent = p.parents[1]
@@ -100,7 +113,7 @@ def goProcessFileAsParent(lparamPath,lparamFileAsParent,loptCapitalize,ltaskMove
                         print("Duplicate - skipping")
                 else:
                     if not os.path.exists(lNewFilePath):
-                        if taskMoveUp:
+                        if ls.taskMoveUp:
                             print ("Test => Moving file up one dir ... ", end='')
                             print ("Test!")
                         else:
@@ -108,92 +121,98 @@ def goProcessFileAsParent(lparamPath,lparamFileAsParent,loptCapitalize,ltaskMove
                     else:
                         print("Duplicate - skipping")
 
-def goProcess(lparamPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch,lparamRegex):
-    for subItem in os.listdir(lparamPath):
-        paramSubPath = lparamPath + subItem
+def goProcess(ls):
+    for subItem in os.listdir(ls.paramPath):
+        paramSubPath = ls.paramPath + subItem
         if os.path.isdir(paramSubPath):
             if not paramSubPath.endswith(os.sep):
                 paramSubPath = paramSubPath + os.sep
-            if loptRecursive:
-                goProcess(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch,lparamRegex)
-            if loptDir:
-                goProcessEntry(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch,lparamRegex)
+            ls1 = copy(ls)
+            ls1.paramPath = paramSubPath
+            if ls.optRecursive:
+                goProcess(ls1)
+            if ls.optDir:
+                goProcessEntry(ls1)
         if os.path.isfile(paramSubPath):
-            if loptFile:
-                goProcessEntry(paramSubPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch,lparamRegex)
+            ls1 = copy(ls)
+            ls1.paramPath = paramSubPath
+            if ls.optFile:
+                goProcessEntry(ls1)
 
-def goProcessEntry(lparamPath,loptRecursive,loptDir,loptFile,loptIgnoreExt,loptCapitalize,lparamKeepLeft,lparamKeepRight,lparamReplace,lparamWith,lparamInsert,lparamAt,lparamAppend,lparamStripLeft,lparamStripRight,lparamFileAsParent,ltaskProduction,lparamMatch,lparamNoMatch,lparamRegex):
-    if lparamPath[-1] == os.sep: # Remove trailing directory separator if present
-        lparamPath = lparamPath[:-1]
-    lPathArray = lparamPath.rsplit(os.sep,1) # Split path by directory separator
+def goProcessEntry(ls):
+    if ls.paramPath[-1] == os.sep: # Remove trailing directory separator if present
+        ls.paramPath = ls.paramPath[:-1]
+    lPathArray = ls.paramPath.rsplit(os.sep,1) # Split path by directory separator
 
-    p = Path(lparamPath).absolute() # Get path of item
+    p = Path(ls.paramPath).absolute() # Get path of item
     lPath = str(p.parents[0]) + os.sep
-    if loptDir or (loptFile and loptIgnoreExt): # Get name of item + extension if applied
+    if ls.optDir or (ls.optFile and ls.optIgnoreExt): # Get name of item + extension if applied
         lOldVal = lPathArray[1]
         lExt = ""
-    elif loptFile:
+    elif ls.optFile:
         f = lPathArray[1].rsplit(".",1)
         lOldVal = f[0]
         lExt = "."+f[1]
 
-    if (ifDefinedReturnTrue(lparamMatch) and lparamPath.find(lparamMatch) > -1) or (not ifDefinedReturnTrue(lparamMatch) and not ifDefinedReturnTrue(lparamNoMatch)) or (ifDefinedReturnTrue(lparamNoMatch) and lparamPath.find(lparamNoMatch) == -1): # Run if MATCH defined and true, or when not defined, or when NOMATCH 
-        if ifDefinedReturnOne(lparamKeepLeft) + ifDefinedReturnOne(lparamKeepRight) > 0:
+    if (ifDefinedReturnTrue(ls.paramMatch) and ls.paramPath.find(ls.paramMatch) > -1) or (not ifDefinedReturnTrue(ls.paramMatch) and not ifDefinedReturnTrue(ls.paramNoMatch)) or (ifDefinedReturnTrue(ls.paramNoMatch) and ls.paramPath.find(ls.paramNoMatch) == -1): # Run if MATCH defined and true, or when not defined, or when NOMATCH 
+        if ifDefinedReturnOne(ls.paramKeepLeft) + ifDefinedReturnOne(ls.paramKeepRight) > 0:
             lNewVal = ""
-            if ifDefinedReturnOne(lparamKeepLeft):
-                res = lOldVal[:int(lparamKeepLeft)]
+            if ifDefinedReturnOne(ls.paramKeepLeft):
+                res = lOldVal[:int(ls.paramKeepLeft)]
                 lNewVal += res
-            if ifDefinedReturnOne(lparamKeepRight):
-                res = lOldVal[- int(lparamKeepRight):]
+            if ifDefinedReturnOne(ls.paramKeepRight):
+                res = lOldVal[- int(ls.paramKeepRight):]
                 lNewVal += res
 
-        if ifDefinedReturnOne(lparamStripLeft) + ifDefinedReturnOne(lparamStripRight) > 0:
+        if ifDefinedReturnOne(ls.paramStripLeft) + ifDefinedReturnOne(ls.paramStripRight) > 0:
             lNewVal = ""
-            if ifDefinedReturnOne(lparamStripLeft):
-                res = lOldVal[int(lparamStripLeft):]
+            if ifDefinedReturnOne(ls.paramStripLeft):
+                res = lOldVal[int(ls.paramStripLeft):]
                 lNewVal += res
-            if ifDefinedReturnOne(lparamStripRight):
-                res = lOldVal[:-int(lparamStripRight)]
+            if ifDefinedReturnOne(ls.paramStripRight):
+                res = lOldVal[:-int(ls.paramStripRight)]
                 lNewVal += res
 
-        if ifDefinedReturnOne(lparamInsert) + ifDefinedReturnOne(lparamAppend) > 0:
+        if ifDefinedReturnOne(ls.paramInsert) + ifDefinedReturnOne(ls.paramAppend) > 0:
             lNewVal = ""
-            if ifDefinedReturnOne(lparamInsert) and not ifDefinedReturnOne(lparamAppend):
-                if lparamAt != 0:
-                    res = lOldVal[:int(lparamAt)] + lparamInsert + lOldVal[int(lparamAt):]
+            if ifDefinedReturnOne(ls.paramInsert) and not ifDefinedReturnOne(ls.paramAppend):
+                if ls.paramAt != 0:
+                    res = lOldVal[:int(ls.paramAt)] + ls.paramInsert + lOldVal[int(ls.paramAt):]
                 else:
-                    res = lparamInsert + lOldVal
+                    res = ls.paramInsert + lOldVal
                 lNewVal += res
-            elif not ifDefinedReturnOne(lparamInsert) and ifDefinedReturnOne(lparamAppend):
-                res = lOldVal + lparamAppend
+            elif not ifDefinedReturnOne(ls.paramInsert) and ifDefinedReturnOne(ls.paramAppend):
+                res = lOldVal + ls.paramAppend
                 lNewVal += res
             else:
-                if lparamAt != 0:
-                    res = lOldVal[:int(lparamAt)] + lparamInsert + lOldVal[int(lparamAt):] + lparamAppend
+                if ls.paramAt != 0:
+                    res = lOldVal[:int(ls.paramAt)] + lparamInsert + lOldVal[int(ls.paramAt):] + ls.paramAppend
                 else:
-                    res = lparamInsert + lOldVal + lparamAppend
+                    res = ls.paramInsert + lOldVal + ls.paramAppend
                 lNewVal += res
             
-        if ifDefinedReturnOne(lparamReplace) + ifDefinedReturnOne(lparamWith) > 0:
+        if ifDefinedReturnOne(ls.paramReplace) + ifDefinedReturnOne(ls.paramWith) > 0:
             lNewVal = ""
-            if lparamRegex:
-                #pattern = re.compile(lparamReplace,re.IGNORECASE)
-                pattern = re.compile(lparamReplace)
-                res = pattern.sub(lparamWith,lOldVal)
+            if ls.paramRegex:
+                if ls.paramRegexIgnoreCase:
+                    pattern = re.compile(ls.paramReplace,re.IGNORECASE)
+                else:
+                    pattern = re.compile(ls.paramReplace)
+                res = pattern.sub(ls.paramWith,lOldVal)
             else:
-                res = lOldVal.replace(lparamReplace,lparamWith)
+                res = lOldVal.replace(ls.paramReplace,ls.paramWith)
             lNewVal += res
 
-        if loptCapitalize:
+        if ls.optCapitalize:
             lNewVal = lNewVal.title()
         lNewVal += lExt
 
-        print(lparamPath + "\t==>\t" + lPath + lNewVal + "\t==\t", end='')
+        print(ls.paramPath + "\t==>\t" + lPath + lNewVal + "\t==\t", end='')
         
-        if ltaskProduction:
+        if ls.taskProduction:
             if not os.path.exists(lPath + lNewVal):
                 try:
-                    os.rename(lparamPath, lPath + lNewVal)
+                    os.rename(ls.paramPath, lPath + lNewVal)
                     print("Done!")
                 except:
                     print("Error executing ")
@@ -208,134 +227,137 @@ if len(sys.argv)>1:
     for i in range(len(sys.argv)):
         if sys.argv[i].startswith("--options="):
             if "f" in sys.argv[i][10:]:
-                optFile = True
+                s.optFile = True
             if "d" in sys.argv[i][10:]:
-                optDir = True
+                s.optDir = True
             if "r" in sys.argv[i][10:]:
-                optRecursive = True
+                s.optRecursive = True
             if "c" in sys.argv[i][10:]:
-                optCapitalize = True
+                s.optCapitalize = True
             if "i" in sys.argv[i][10:]:
-                optIgnoreExt = True
+                s.optIgnoreExt = True
         
         # Path
         if sys.argv[i].startswith("--path="):
-            paramPath = getVal(sys.argv[i],7)
-            ifNoneThenExit(paramPath,"<path> not defined")
-            if not paramPath.endswith(os.sep):
-                paramPath = paramPath + os.sep
-            if not os.path.exists(paramPath):
+            s.paramPath = getVal(sys.argv[i],7)
+            ifNoneThenExit(s.paramPath,"<path> not defined")
+            if not s.paramPath.endswith(os.sep):
+                s.paramPath = s.paramPath + os.sep
+            if not os.path.exists(s.paramPath):
                 print("Invalid path")
                 sys.exit()
             else:
-                if not os.path.isdir(paramPath):
+                if not os.path.isdir(s.paramPath):
                     print("Path is not a directory")
                     sys.exit()
 
         # Keep left or right n of characters
         if sys.argv[i].startswith("--keep-left="):
-            paramKeepLeft = getVal(sys.argv[i],12)
-            ifNoneThenExit(paramKeepLeft,"<keep left> not defined")
-            ifNotIntThenExit(paramKeepLeft,"Non-int <keep left> value")
+            s.paramKeepLeft = getVal(sys.argv[i],12)
+            ifNoneThenExit(s.paramKeepLeft,"<keep left> not defined")
+            ifNotIntThenExit(s.paramKeepLeft,"Non-int <keep left> value")
         if sys.argv[i].startswith("--keep-right="):
-            paramKeepRight = getVal(sys.argv[i],13)
-            ifNoneThenExit(paramKeepRight,"<keep right> not defined")
-            ifNotIntThenExit(paramKeepRight,"Non-int <keep right> value")
+            s.paramKeepRight = getVal(sys.argv[i],13)
+            ifNoneThenExit(s.paramKeepRight,"<keep right> not defined")
+            ifNotIntThenExit(s.paramKeepRight,"Non-int <keep right> value")
 
         # Replace this with that
         if sys.argv[i].startswith("--replace="):
-            paramReplace = getVal(sys.argv[i],10)
-            ifNoneThenExit(paramReplace,"<replace> not defined")
+            s.paramReplace = getVal(sys.argv[i],10)
+            ifNoneThenExit(s.paramReplace,"<replace> not defined")
         if sys.argv[i].startswith("--with="):
-            paramWith = getVal(sys.argv[i],7)
-            ifNoneThenExit(paramWith,"<with> not defined")
-            if paramWith == "null": paramWith = ""
-            if paramWith == "space": paramWith = " "
+            s.paramWith = getVal(sys.argv[i],7)
+            ifNoneThenExit(s.paramWith,"<with> not defined")
+            if s.paramWith == "null": s.paramWith = ""
+            if s.paramWith == "space": s.paramWith = " "
 
         # Insert what where and append at end
         if sys.argv[i].startswith("--insert="):
-            paramInsert = getVal(sys.argv[i],9)
-            ifNoneThenExit(paramInsert,"<insert> not defined")
+            s.paramInsert = getVal(sys.argv[i],9)
+            ifNoneThenExit(s.paramInsert,"<insert> not defined")
         if sys.argv[i].startswith("--at="):
-            paramAt = getVal(sys.argv[i],5)
-            ifNoneThenExit(paramAt,"<at> not defined")
-            ifNotIntThenExit(paramAt,"Non-int <at> value")
+            s.paramAt = getVal(sys.argv[i],5)
+            ifNoneThenExit(s.paramAt,"<at> not defined")
+            ifNotIntThenExit(s.paramAt,"Non-int <at> value")
         if sys.argv[i].startswith("--append="):
-            paramAppend = getVal(sys.argv[i],9)
-            ifNoneThenExit(paramAppend,"<append> not defined")
+            s.paramAppend = getVal(sys.argv[i],9)
+            ifNoneThenExit(s.paramAppend,"<append> not defined")
 
         # Strip from left or right
         if sys.argv[i].startswith("--strip-left="):
-            paramStripLeft = getVal(sys.argv[i],13)
-            ifNoneThenExit(paramStripLeft,"<strip left> not defined")
-            ifNotIntThenExit(paramStripLeft,"Non-int <strip left> value")
+            s.paramStripLeft = getVal(sys.argv[i],13)
+            ifNoneThenExit(s.paramStripLeft,"<strip left> not defined")
+            ifNotIntThenExit(s.paramStripLeft,"Non-int <strip left> value")
         if sys.argv[i].startswith("--strip-right="):
-            paramStripRight = getVal(sys.argv[i],14)
-            ifNoneThenExit(paramStripRight,"<strip right> not defined")
-            ifNotIntThenExit(paramStripRight,"Non-int <strip right> value")
+            s.paramStripRight = getVal(sys.argv[i],14)
+            ifNoneThenExit(s.paramStripRight,"<strip right> not defined")
+            ifNotIntThenExit(s.paramStripRight,"Non-int <strip right> value")
 
         # Rename file as container folder and move one folder up
         if sys.argv[i].startswith("--file-as-parent="):
-            paramFileAsParent = getVal(sys.argv[i],17)
-            ifNoneThenExit(paramFileAsParent,"<file-as-parent> search file not defined")
+            s.paramFileAsParent = getVal(sys.argv[i],17)
+            ifNoneThenExit(s.paramFileAsParent,"<file-as-parent> search file not defined")
         if sys.argv[i].startswith("--move-up"):
-            taskMoveUp = True
+            s.taskMoveUp = True
 
         if sys.argv[i].startswith("--match="):
-            paramMatch = getVal(sys.argv[i],8)
+            s.paramMatch = getVal(sys.argv[i],8)
 
         if sys.argv[i].startswith("--no-match="):
-            paramNoMatch = getVal(sys.argv[i],11)
+            s.paramNoMatch = getVal(sys.argv[i],11)
+            
+        if sys.argv[i].startswith("--ignore-case"):
+            s.paramRegexIgnoreCase = True
 
         # Do anything with files?
         if sys.argv[i] == "--make-it-so":
-            taskProduction = True
+            s.taskProduction = True
 
         if sys.argv[i] == "--verbose":
-            paramVerbose = True
+            s.paramVerbose = True
 
         if sys.argv[i] == "--regex":
-            paramRegex = True
+            s.paramRegex = True
 
         if sys.argv[i] == "--dump":
-            paramDump = True
+            s.paramDump = True
 
-    if paramDump:
-        print('taskProduction',taskProduction)
-        print('taskMoveUp',taskMoveUp)
-        print('optFile',optFile)
-        print('optDir',optDir)
-        print('optRecursive',optRecursive)
-        print('optCapitalize',optCapitalize)
-        print('optIgnoreExt',optIgnoreExt)
-        print('paramPath',paramPath)
-        print('paramKeepLeft',paramKeepLeft)
-        print('paramKeepRight',paramKeepRight)
-        print('paramReplace',paramReplace)
-        print('paramWith',paramWith)
-        print('paramInsert',paramInsert)
-        print('paramAt',paramAt)
-        print('paramAppend',paramAppend)
-        print('paramStripLeft',paramStripLeft)
-        print('paramStripRight',paramStripRight)
-        print('paramFileAsParent',paramFileAsParent)
-        print('paramVerbose',paramVerbose)
-        print('paramDump',paramDump)
-        print('paramMatch',paramMatch)
-        print('paramNoMatch',paramNoMatch)
-        print('paramRegex',paramRegex)
+    if s.paramDump:
+        print('taskProduction\t\t=\t',s.taskProduction)
+        print('taskMoveUp\t\t=\t',s.taskMoveUp)
+        print('optFile\t\t\t=\t',s.optFile)
+        print('optDir\t\t\t=\t',s.optDir)
+        print('optRecursive\t\t=\t',s.optRecursive)
+        print('optCapitalize\t\t=\t',s.optCapitalize)
+        print('optIgnoreExt\t\t=\t',s.optIgnoreExt)
+        print('paramPath\t\t=\t',s.paramPath)
+        print('paramKeepLeft\t\t=\t',s.paramKeepLeft)
+        print('paramKeepRight\t\t=\t',s.paramKeepRight)
+        print('paramReplace\t\t=\t',s.paramReplace)
+        print('paramWith\t\t=\t',s.paramWith)
+        print('paramInsert\t\t=\t',s.paramInsert)
+        print('paramAt\t\t\t=\t',s.paramAt)
+        print('paramAppend\t\t=\t',s.paramAppend)
+        print('paramStripLeft\t\t=\t',s.paramStripLeft)
+        print('paramStripRight\t\t=\t',s.paramStripRight)
+        print('paramFileAsParent\t=\t',s.paramFileAsParent)
+        print('paramVerbose\t\t=\t',s.paramVerbose)
+        print('paramDump\t\t=\t',s.paramDump)
+        print('paramMatch\t\t=\t',s.paramMatch)
+        print('paramNoMatch\t\t=\t',s.paramNoMatch)
+        print('paramRegex\t\t=\t',s.paramRegex)
         sys.exit()
         
-    if (paramReplace == None or paramWith == None) and paramReplace != paramWith:
+    if (s.paramReplace == None or s.paramWith == None) and s.paramReplace != s.paramWith:
         print("<replace> and <with> must both be defined")
         sys.exit()
 
-    ifNoneThenExit(paramPath,"No path specified")
-    if (not optFile and not optDir) and not ifDefinedReturnTrue(paramFileAsParent):
+    ifNoneThenExit(s.paramPath,"No path specified")
+    if (not s.optFile and not s.optDir) and not ifDefinedReturnTrue(s.paramFileAsParent):
         print("Either 'File' or 'Directory' option must be set, od the task must be '--file-as-parent'")
         sys.exit()
     
-    if  not ifDefinedReturnTrue(paramFileAsParent) and taskMoveUp:
+    if  not ifDefinedReturnTrue(s.paramFileAsParent) and s.taskMoveUp:
         print("Task '--move-up' can only be used in combination with '--file-as-parent'")
         sys.exit()
 
@@ -344,12 +366,12 @@ if len(sys.argv)>1:
     intInsApp = 0
     intReplace = 0
     intFAP = 0
-    if ifDefinedReturnOne(paramKeepLeft) + ifDefinedReturnOne(paramKeepRight) > 0: intKeep = 1
-    if ifDefinedReturnOne(paramStripLeft) + ifDefinedReturnOne(paramStripRight) > 0: intStrip = 1
-    if ifDefinedReturnOne(paramInsert) + ifDefinedReturnOne(paramAppend) > 0: intInsApp = 1
-    if ifDefinedReturnOne(paramReplace) + ifDefinedReturnOne(paramWith) > 0: intReplace = 1
-    if ifDefinedReturnOne(paramFileAsParent): intFAP = 1
-    if ifDefinedReturnOne(paramMatch) + ifDefinedReturnOne(paramNoMatch) > 1:
+    if ifDefinedReturnOne(s.paramKeepLeft) + ifDefinedReturnOne(s.paramKeepRight) > 0: intKeep = 1
+    if ifDefinedReturnOne(s.paramStripLeft) + ifDefinedReturnOne(s.paramStripRight) > 0: intStrip = 1
+    if ifDefinedReturnOne(s.paramInsert) + ifDefinedReturnOne(s.paramAppend) > 0: intInsApp = 1
+    if ifDefinedReturnOne(s.paramReplace) + ifDefinedReturnOne(s.paramWith) > 0: intReplace = 1
+    if ifDefinedReturnOne(s.paramFileAsParent): intFAP = 1
+    if ifDefinedReturnOne(s.paramMatch) + ifDefinedReturnOne(s.paramNoMatch) > 1:
         print("--match and --no-match cannot be used together")
         sys.exit()
     if intKeep + intStrip + intInsApp + intReplace + intFAP > 1:
@@ -359,16 +381,17 @@ if len(sys.argv)>1:
         print("No task specified")
         sys.exit()
 
-    if taskProduction:
+    if s.taskProduction:
         print("This is a production run")
     else:
         print("This is a test run")
 
     # If the program survived this long - initialize crawler
-    if ifDefinedReturnTrue(paramFileAsParent): 
-        goProcessFileAsParent(paramPath,paramFileAsParent,optCapitalize,taskMoveUp,taskProduction)
+    if ifDefinedReturnTrue(s.paramFileAsParent): 
+        goProcessFileAsParent(s)
+        #goProcessFileAsParent(paramPath,paramFileAsParent,optCapitalize,taskMoveUp,taskProduction)
     else:
-        goProcess(paramPath,optRecursive,optDir,optFile,optIgnoreExt,optCapitalize,paramKeepLeft,paramKeepRight,paramReplace,paramWith,paramInsert,paramAt,paramAppend,paramStripLeft,paramStripRight,paramFileAsParent,taskProduction,paramMatch,paramNoMatch,paramRegex)
+        goProcess(s)
 else:
     print("Help")
     print("")
@@ -394,6 +417,8 @@ else:
     print("\t--with=<str>\t\t\t\tWith <str>")
     print("\t\tnull => replace with nothing")
     print("\t\tspace => replace with space")
+    print("\t--regex\t\t\t\t\tWill assume --replace <str> is regular expression")
+    print("\t--ignore-case\t\t\t\t\tWill ignore case of regular expression")
     print("")
     print("\t--insert=<str>\t\t\t\tInsert <str> at start")
     print("\t--at=<int>\t\t\t\tInsert <str> at <int>")
@@ -408,8 +433,6 @@ else:
     print("By default, only task output is displayed - no work is done. To perform the actual task, use the production run switch")
     print("\t--make-it-so\t\t\t\tDo a production run")
     print("")
-    print("\t--regex\t\t\t\t\tWill assume all strings are regex patterns")
-    #print("\t--ignore-case\t\t\t\t\tWill ignore case of regex patterns")
     print("\t--dump\t\t\t\t\tPrint detected arguments")
     print("\t--verbose\t\t\t\tVerbose output")
     print("")
