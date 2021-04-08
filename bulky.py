@@ -75,6 +75,13 @@ def ifDefinedReturnTrue(strValue):
         ret = True
     return ret
 
+# Append trailing directory separator
+def validatePath(strValue):
+    ret = strValue
+    if not ret.endswith(os.sep):
+        ret = ret + os.sep
+    return ret
+
 # Do actual work here < --------------
 def goProcessFileAsParent(ls):
     lCurrentFilePath = ""
@@ -123,8 +130,7 @@ def goProcess(ls):
     for subItem in os.listdir(ls.paramPath):
         paramSubPath = ls.paramPath + subItem
         if os.path.isdir(paramSubPath):
-            if not paramSubPath.endswith(os.sep):
-                paramSubPath = paramSubPath + os.sep
+            paramSubPath = validatePath(paramSubPath)
             ls1 = copy(ls)
             ls1.paramPath = paramSubPath
             if ls.optRecursive:
@@ -380,7 +386,8 @@ if len(sys.argv)>1:
         print("This is a test run")
 
     # If the program survived this long - initialize crawler
-    if ifDefinedReturnTrue(s.paramFileAsParent): 
+    if ifDefinedReturnTrue(s.paramFileAsParent):
+        s.paramPath = validatePath(s.paramPath)
         goProcessFileAsParent(s)
     else:
         if tmpPathArray != None:
@@ -388,8 +395,7 @@ if len(sys.argv)>1:
                 s1 = copy(s)
                 pattern = re.compile(r"{.+}",re.IGNORECASE)
                 s1.paramPath = pattern.sub(tmpPath,s.paramPath)
-                if not s1.paramPath.endswith(os.sep):
-                    s1.paramPath = s1.paramPath + os.sep
+                s1.paramPath = validatePath(s1.paramPath)
                 if not os.path.exists(s1.paramPath):
                     print("Invalid path: ", s1.paramPath)
                 else:
@@ -399,8 +405,7 @@ if len(sys.argv)>1:
                         goProcess(s1)
         else:
             s1 = copy(s)
-            if not s1.paramPath.endswith(os.sep):
-                s1.paramPath = s1.paramPath + os.sep
+            s1.paramPath = validatePath(s1.paramPath)
             if not os.path.exists(s1.paramPath):
                 print("Invalid path: ", s1.paramPath)
             else:
