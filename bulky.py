@@ -190,7 +190,7 @@ def goProcessEntry(ls):
                 lNewVal += res
             else:
                 if ls.paramAt != 0:
-                    res = lOldVal[:int(ls.paramAt)] + lparamInsert + lOldVal[int(ls.paramAt):] + ls.paramAppend
+                    res = lOldVal[:int(ls.paramAt)] + ls.paramInsert + lOldVal[int(ls.paramAt):] + ls.paramAppend
                 else:
                     res = ls.paramInsert + lOldVal + ls.paramAppend
                 lNewVal += res
