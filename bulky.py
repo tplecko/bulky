@@ -9,6 +9,8 @@ class startup:
     taskProduction = False
     taskMoveUp = False
 
+    taskCapitalize = False
+
     paramVerbose = False
     paramDump = False
 
@@ -41,6 +43,32 @@ class startup:
     paramFileAsParent = None
 
 s = startup()
+
+def varDump():
+    print('taskProduction\t\t=\t',s.taskProduction)
+    print('taskMoveUp\t\t=\t',s.taskMoveUp)
+    print('taskCapitalize\t\t=\t',s.taskCapitalize)
+    print('optFile\t\t\t=\t',s.optFile)
+    print('optDir\t\t\t=\t',s.optDir)
+    print('optRecursive\t\t=\t',s.optRecursive)
+    print('optCapitalize\t\t=\t',s.optCapitalize)
+    print('optIgnoreExt\t\t=\t',s.optIgnoreExt)
+    print('paramPath\t\t=\t',s.paramPath)
+    print('paramKeepLeft\t\t=\t',s.paramKeepLeft)
+    print('paramKeepRight\t\t=\t',s.paramKeepRight)
+    print('paramReplace\t\t=\t',s.paramReplace)
+    print('paramWith\t\t=\t',s.paramWith)
+    print('paramInsert\t\t=\t',s.paramInsert)
+    print('paramAt\t\t\t=\t',s.paramAt)
+    print('paramAppend\t\t=\t',s.paramAppend)
+    print('paramStripLeft\t\t=\t',s.paramStripLeft)
+    print('paramStripRight\t\t=\t',s.paramStripRight)
+    print('paramFileAsParent\t=\t',s.paramFileAsParent)
+    print('paramVerbose\t\t=\t',s.paramVerbose)
+    print('paramDump\t\t=\t',s.paramDump)
+    print('paramMatch\t\t=\t',s.paramMatch)
+    print('paramNoMatch\t\t=\t',s.paramNoMatch)
+    print('paramRegex\t\t=\t',s.paramRegex)
 
 # Return None if empty string
 def getVal(strValue,intLength):
@@ -83,6 +111,58 @@ def validatePath(strValue):
     return ret
 
 # Do actual work here < --------------
+def decideWhatToDo(ls):
+    if ifDefinedReturnTrue(s.paramFileAsParent):
+        goProcessFileAsParent(ls)
+    elif s.taskCapitalize:
+        goProcessCapitalize(ls)
+    else:
+        goProcess(ls)
+
+def goProcessCapitalize(ls):
+    for subItem in os.listdir(ls.paramPath):
+        paramSubPath = ls.paramPath + subItem
+        if os.path.isdir(paramSubPath):
+            paramSubPath = validatePath(paramSubPath)
+            ls1 = copy(ls)
+            ls1.paramPath = paramSubPath
+            if ls.optRecursive:
+                goProcessCapitalize(ls1)
+            if ls.optDir:
+                goProcessCapitalizeEntry(ls1)
+        if os.path.isfile(paramSubPath):
+            ls1 = copy(ls)
+            ls1.paramPath = paramSubPath
+            if ls.optFile:
+                goProcessCapitalizeEntry(ls1)
+
+def goProcessCapitalizeEntry(ls):
+    if ls.paramPath[-1] == os.sep: # Remove trailing directory separator if present
+        ls.paramPath = ls.paramPath[:-1]
+    lPathArray = ls.paramPath.rsplit(os.sep,1) # Split path by directory separator
+
+    p = Path(ls.paramPath).absolute() # Get path of item
+    lPath = str(p.parents[0]) + os.sep
+    if ls.optDir or (ls.optFile and ls.optIgnoreExt): # Get name of item + extension if applied
+        lOldVal = lPathArray[1]
+        lExt = ""
+    elif ls.optFile:
+        f = lPathArray[1].rsplit(".",1)
+        lOldVal = f[0]
+        lExt = "."+f[1]
+
+    lNewVal = lOldVal.title() + lExt
+
+    print(ls.paramPath + "\t==>\t" + lPath + lNewVal + "\t==\t", end='')
+    if ls.taskProduction:
+        try:
+            os.rename(ls.paramPath, lPath + lNewVal)
+            print("Done!")
+        except:
+            print("Error executing ")
+    else:
+        print("Test")
+
 def goProcessFileAsParent(ls):
     lCurrentFilePath = ""
     lCurrentFileNameArray = ""
@@ -300,6 +380,9 @@ if len(sys.argv)>1:
         if sys.argv[i].startswith("--ignore-case"):
             s.paramRegexIgnoreCase = True
 
+        if sys.argv[i].startswith("--capitalize"):
+            s.taskCapitalize = True
+
         # Do anything with files?
         if sys.argv[i] == "--make-it-so":
             s.taskProduction = True
@@ -316,35 +399,10 @@ if len(sys.argv)>1:
         # Path
         if sys.argv[i].startswith("--path="):
             s.paramPath = getVal(sys.argv[i],7)
-            if re.search("{.+}",s.paramPath):
-                tmpArray = re.findall(r"{.+}",s.paramPath)
-                tmpPathArray = tmpArray[0][1:-1].split(",")
             ifNoneThenExit(s.paramPath,"<path> not defined")
-
+        
     if s.paramDump:
-        print('taskProduction\t\t=\t',s.taskProduction)
-        print('taskMoveUp\t\t=\t',s.taskMoveUp)
-        print('optFile\t\t\t=\t',s.optFile)
-        print('optDir\t\t\t=\t',s.optDir)
-        print('optRecursive\t\t=\t',s.optRecursive)
-        print('optCapitalize\t\t=\t',s.optCapitalize)
-        print('optIgnoreExt\t\t=\t',s.optIgnoreExt)
-        print('paramPath\t\t=\t',s.paramPath)
-        print('paramKeepLeft\t\t=\t',s.paramKeepLeft)
-        print('paramKeepRight\t\t=\t',s.paramKeepRight)
-        print('paramReplace\t\t=\t',s.paramReplace)
-        print('paramWith\t\t=\t',s.paramWith)
-        print('paramInsert\t\t=\t',s.paramInsert)
-        print('paramAt\t\t\t=\t',s.paramAt)
-        print('paramAppend\t\t=\t',s.paramAppend)
-        print('paramStripLeft\t\t=\t',s.paramStripLeft)
-        print('paramStripRight\t\t=\t',s.paramStripRight)
-        print('paramFileAsParent\t=\t',s.paramFileAsParent)
-        print('paramVerbose\t\t=\t',s.paramVerbose)
-        print('paramDump\t\t=\t',s.paramDump)
-        print('paramMatch\t\t=\t',s.paramMatch)
-        print('paramNoMatch\t\t=\t',s.paramNoMatch)
-        print('paramRegex\t\t=\t',s.paramRegex)
+        varDump()
         sys.exit()
         
     if (s.paramReplace == None or s.paramWith == None) and s.paramReplace != s.paramWith:
@@ -352,8 +410,8 @@ if len(sys.argv)>1:
         sys.exit()
 
     ifNoneThenExit(s.paramPath,"No path specified")
-    if (not s.optFile and not s.optDir) and not ifDefinedReturnTrue(s.paramFileAsParent):
-        print("Either 'File' or 'Directory' option must be set, od the task must be '--file-as-parent'")
+    if (not s.optFile and not s.optDir) and not ifDefinedReturnTrue(s.paramFileAsParent) and not s.taskCapitalize:
+        print("Either 'File' or 'Directory' option must be set, od the task must be either '--file-as-parent' or '--capitalize'")
         sys.exit()
     
     if  not ifDefinedReturnTrue(s.paramFileAsParent) and s.taskMoveUp:
@@ -365,18 +423,21 @@ if len(sys.argv)>1:
     intInsApp = 0
     intReplace = 0
     intFAP = 0
+    intCap = 0
     if ifDefinedReturnOne(s.paramKeepLeft) + ifDefinedReturnOne(s.paramKeepRight) > 0: intKeep = 1
     if ifDefinedReturnOne(s.paramStripLeft) + ifDefinedReturnOne(s.paramStripRight) > 0: intStrip = 1
     if ifDefinedReturnOne(s.paramInsert) + ifDefinedReturnOne(s.paramAppend) > 0: intInsApp = 1
     if ifDefinedReturnOne(s.paramReplace) + ifDefinedReturnOne(s.paramWith) > 0: intReplace = 1
     if ifDefinedReturnOne(s.paramFileAsParent): intFAP = 1
+    if s.taskCapitalize: intCap = 1
     if ifDefinedReturnOne(s.paramMatch) + ifDefinedReturnOne(s.paramNoMatch) > 1:
         print("--match and --no-match cannot be used together")
         sys.exit()
-    if intKeep + intStrip + intInsApp + intReplace + intFAP > 1:
+    if intKeep + intStrip + intInsApp + intReplace + intFAP + intCap > 1:
         print("Too many tasks")
+        varDump()
         sys.exit()
-    elif intKeep + intStrip + intInsApp + intReplace + intFAP == 0:
+    elif intKeep + intStrip + intInsApp + intReplace + intFAP + intCap == 0:
         print("No task specified")
         sys.exit()
 
@@ -384,27 +445,16 @@ if len(sys.argv)>1:
         print("This is a production run")
     else:
         print("This is a test run")
-
+    
     # If the program survived this long - initialize crawler
-    if ifDefinedReturnTrue(s.paramFileAsParent):
-        s.paramPath = validatePath(s.paramPath)
-        goProcessFileAsParent(s)
-    else:
-        if tmpPathArray != None:
-            for tmpPath in tmpPathArray:
-                s1 = copy(s)
-                pattern = re.compile(r"{.+}",re.IGNORECASE)
-                s1.paramPath = pattern.sub(tmpPath,s.paramPath)
-                s1.paramPath = validatePath(s1.paramPath)
-                if not os.path.exists(s1.paramPath):
-                    print("Invalid path: ", s1.paramPath)
-                else:
-                    if not os.path.isdir(s1.paramPath):
-                        print("Path is not a directory")
-                    else:
-                        goProcess(s1)
-        else:
+    if re.search("{.+}",s.paramPath):
+        tmpArray = re.findall(r"{.+}",s.paramPath)
+        tmpPathArray = tmpArray[0][1:-1].split(",")
+    if tmpPathArray != None:
+        for tmpPath in tmpPathArray:
             s1 = copy(s)
+            pattern = re.compile(r"{.+}",re.IGNORECASE)
+            s1.paramPath = pattern.sub(tmpPath,s.paramPath)
             s1.paramPath = validatePath(s1.paramPath)
             if not os.path.exists(s1.paramPath):
                 print("Invalid path: ", s1.paramPath)
@@ -412,14 +462,25 @@ if len(sys.argv)>1:
                 if not os.path.isdir(s1.paramPath):
                     print("Path is not a directory")
                 else:
-                    goProcess(s1)
+                    decideWhatToDo(s1)
+    else:
+        s1 = copy(s)
+        s1.paramPath = validatePath(s1.paramPath)
+        if not os.path.exists(s1.paramPath):
+            print("Invalid path: ", s1.paramPath)
+        else:
+            if not os.path.isdir(s1.paramPath):
+                print("Path is not a directory")
+            else:
+                decideWhatToDo(s1)
+
 else:
     print("Help")
     print("")
     print("\t--options=<options>")
     print("Options:")
-    print("\tf\t\t\t\t\tRename files")
-    print("\td\t\t\t\t\tRename directories")
+    print("\tf\t\t\t\t\tProcess files")
+    print("\td\t\t\t\t\tProcess directories")
     print("\tr\t\t\t\t\tRecursive run")
     print("\tc\t\t\t\t\tCapitalize words - Note: This will capitalize everything in path, regardless of the matching.")
     print("\ti\t\t\t\t\tIgnore extensions (in combination with <f>)")
@@ -452,6 +513,8 @@ else:
     print("")
     print("\t--file-as-parent=<str>\tRename <str> to match parent directory name")
     print("\t--move-up\t\t\t\tMove file up one directory")
+    print("")
+    print("\t--capitalize\t\t\t\tCapitalize words")
     print("")
     print("By default, only task output is displayed - no work is done. To perform the actual task, use the production run switch")
     print("\t--make-it-so\t\t\t\tDo a production run")
