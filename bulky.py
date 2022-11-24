@@ -322,6 +322,18 @@ if len(sys.argv)>1:
             if "i" in sys.argv[i][10:]:
                 s.optIgnoreExt = True
         
+        # Remove = Replace <val> with null
+        if sys.argv[i].startswith("--remove="):
+            s.paramReplace = getVal(sys.argv[i],9)
+            ifNoneThenExit(s.paramReplace,"<remove> not defined")
+            s.paramWith = ""
+
+        # PointToSpace = Replace . with space
+        if sys.argv[i].startswith("--pointtospace"):
+            s.paramReplace = "."
+            ifNoneThenExit(s.paramReplace,"<pointtospace> not defined")
+            s.paramWith = " "
+            
         # Keep left or right n of characters
         if sys.argv[i].startswith("--keep-left="):
             s.paramKeepLeft = getVal(sys.argv[i],12)
@@ -503,6 +515,9 @@ else:
     print("\t--with=<str>\t\t\t\tWith <str>")
     print("\t\tnull => replace with nothing")
     print("\t\tspace => replace with space")
+    print("")
+    print("\t--remove=<str>\t\t\t\tRemove = Replace <str> with null")
+    print("\t--pointtospace\t\t\t\tPointToSpace = Replace . with space")
     print("")
     print("\t--insert=<str>\t\t\t\tInsert <str> at start")
     print("\t--at=<int>\t\t\t\tInsert <str> at <int>")
